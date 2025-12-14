@@ -24,10 +24,6 @@ class Product extends Model
     protected $appends = [
         'formatted_price',
     ];
-
-    /**
-     * Get the product price formatted with currency.
-     */
     public function getFormattedPriceAttribute(): string
     {
         return '$' . number_format($this->price ?? 0, 2);

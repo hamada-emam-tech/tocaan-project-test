@@ -101,19 +101,11 @@ class Order extends Model
         $this->save();
     }
 
-    /**
-     * Get the order total formatted with currency.
-     * Usage: $order->formatted_total
-     */
     public function getFormattedTotalAttribute(): string
     {
         return '$' . number_format($this->total_amount ?? 0, 2);
     }
 
-    /**
-     * Get the order status formatted as a readable string.
-     * Usage: $order->formatted_status
-     */
     public function getFormattedStatusAttribute(): string
     {
         return ucfirst($this->status->value);

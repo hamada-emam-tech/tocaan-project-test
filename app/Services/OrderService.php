@@ -93,6 +93,7 @@ class OrderService
                     ]);
                 }
 
+                $order->load('items');
                 $order->updateTotal();
             }
 

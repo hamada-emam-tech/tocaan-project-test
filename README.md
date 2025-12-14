@@ -72,6 +72,7 @@
     touch database/database.sqlite
     php artisan migrate:fresh --seed
     php artisan serve
+    php artisan test
     ```
 
     This creates:

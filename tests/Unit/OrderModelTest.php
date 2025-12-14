@@ -72,15 +72,15 @@ class OrderModelTest extends TestCase
         $this->assertEquals($expectedTotal, $total);
     }
 
-    public function test_order_has_items_attribute()
+    public function test_order_can_have_items()
     {
-        $items = [
-            ['product_name' => 'Test', 'quantity' => 1, 'price' => 10.00]
-        ];
+        $order = Order::factory()->create();
+        $order->items()->create([
+            'product_name' => 'Test',
+            'quantity' => 1,
+            'price' => 10.00
+        ]);
 
-        $order = Order::factory()->create(['items' => $items]);
-
-        $this->assertIsArray($order->items);
-        $this->assertCount(1, $order->items);
+        $this->assertCount(1, $order->refresh()->items);
     }
 }

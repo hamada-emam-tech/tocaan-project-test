@@ -266,6 +266,6 @@ class PaymentFlowTest extends TestCase
             ->getJson("/api/orders/{$order->id}/payments");
 
         $response->assertStatus(200)
-            ->assertJsonCount(4, 'data.data');
+            ->assertJsonCount(4, 'data');
     }
 }

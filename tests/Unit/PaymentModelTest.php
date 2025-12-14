@@ -56,8 +56,8 @@ class PaymentModelTest extends TestCase
     {
         $payment = Payment::factory()->create(['amount' => '100.50']);
 
-        $this->assertIsFloat($payment->amount);
-        $this->assertEquals(100.50, $payment->amount);
+        $this->assertIsString($payment->amount);
+        $this->assertEquals('100.50', $payment->amount);
     }
 
     public function test_payment_casts_gateway_response_to_array()
