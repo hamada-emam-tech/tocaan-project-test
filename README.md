@@ -1,59 +1,259 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# 📦 Order & Payment API
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A robust, localized Laravel 12 API for managing orders and payments with an extensible payment gateway system.
 
-## About Laravel
+## 🚀 Features
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+-   **Order Management**: Create, update, delete, and view orders.
+-   **Payment Processing**: Multi-gateway support (Credit Card, PayPal, Stripe) using Manager/Driver pattern.
+-   **Role-Based Access**: Admin and Customer roles.
+-   **JWT Authentication**: Secure API access.
+-   **SOLID Architecture**: Repository and Service patterns for clean, testable code.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## 🛠️ Architecture
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+-   **Patterns**: Repository, Service, Manager (Drivers), Strategy.
+-   **Tech Stack**: Laravel 12, PHP 8.2+, MySQL, JWT Auth.
+-   **Code Quality**: PSR-12, Types, Strict Mode.
 
-## Learning Laravel
+## 🧠 Complete Workflow & Business Rules
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+### Order-to-Payment Flow
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+1.  **Product Management** (Admin/Operations)
 
-## Laravel Sponsors
+    -   Admin creates products via `POST /api/products`
+    -   Products are available for all users to view via `GET /api/products`
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+2.  **Order Creation** (Customer)
 
-### Premium Partners
+    -   Customer creates order with `POST /api/orders`
+    -   Order status: **`pending`** (initial state)
+    -   Can reference products by `product_id` or manually specify items
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+3.  **Order Confirmation** (Admin)
 
-## Contributing
+    -   Admin reviews and updates order status via `PATCH /api/orders/{id}/status`
+    -   Status transitions:
+        -   `pending` → `confirmed` (enables payment)
+        -   `pending` → `cancelled` (blocks payment)
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+4.  **Payment Processing** (Customer)
 
-## Code of Conduct
+    -   Customer lists available payment gateways via `GET /api/payment-gateways`
+    -   Only gateways with configured credentials appear
+    -   Default gateway is pre-selected (marked with `is_default: true`)
+    -   Customer pays confirmed order via `POST /api/orders/{id}/pay`
+    -   **Multiple partial payments allowed** until total equals order amount
+    -   **Overpayment prevention**: Validation blocks payments exceeding order total
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+5.  **Payment Restrictions**
+    -   ✅ **Confirmed orders**: Can be paid
+    -   ❌ **Pending orders**: Cannot be paid (must be confirmed first)
+    -   ❌ **Cancelled orders**: Cannot be paid
+    -   ❌ **Fully paid orders**: Additional payments blocked with validation message
 
-## Security Vulnerabilities
+### Role-Based Access Control
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+-   **Admin**:
+    -   View all orders and payments
+    -   Update order status (confirm/cancel)
+    -   Manage products and system settings
+-   **Customer**:
+    -   View only their own orders and payments
+    -   Create orders and process payments
+    -   List available payment gateways
 
-## License
+### Payment Gateway Configuration
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+-   Gateways configured via database settings (`payment_gateways` key)
+-   `SettingServiceProvider` dynamically loads config at boot
+-   Only gateways with credentials appear in customer gateway list
+-   Supports: Credit Card, PayPal, Stripe (extensible)
+-   **Middleware Validation**: `ValidatePaymentMethod` middleware validates payment methods before processing
+
+### Middleware Stack
+
+-   **CheckRole**: Enforces role-based access control (Admin/Customer)
+-   **ValidatePaymentMethod**: Validates and configures payment methods for payment routes
+-   **JWT Authentication**: Secures all protected endpoints
+
+## ⚙️ Setup
+
+1. **Clone & Install**
+
+    ```bash
+    git clone <repo>
+    cd tocaan-project
+    composer install
+    cp .env.example .env
+    php artisan key:generate
+    php artisan jwt:secret
+    ```
+
+2. **Database**
+   Configure your database in `.env`.
+
+    ```env
+    DB_CONNECTION=sqlite
+    # or mysql details...
+    ```
+
+3. **Migrate & Seed**
+
+    ```bash
+    php artisan migrate:fresh --seed
+    ```
+
+    This creates:
+
+    - **Admin**: `admin@tocaan.com` / `password`
+    - **Customer**: `customer@tocaan.com` / `password`
+    - Dummy orders and payments.
+
+4. **Serve**
+    ```bash
+    php artisan serve
+    ```
+
+## 🔌 API Endpoints
+
+### Authentication
+
+-   `POST /api/auth/login` - Login
+-   `POST /api/auth/logout` - Logout
+-   `GET /api/auth/profile` - Get user profile
+-   `POST /api/auth/refresh` - Refresh token
+
+### Orders
+
+-   `GET /api/orders` - List orders (filtered by role)
+-   `POST /api/orders` - Create order
+-   `GET /api/orders/{id}` - View order
+-   `PUT /api/orders/{id}` - Update order items
+-   `PATCH /api/orders/{id}/status` - Update order status (Admin only)
+-   `DELETE /api/orders/{id}` - Delete order
+-   **Payments for Order**:
+    -   `POST /api/orders/{id}/pay` - Process payment for this order
+    -   `GET /api/orders/{id}/payments` - View payment history
+
+### Payments (Admin/Audit)
+
+-   `GET /api/payments` - List payments (Admin: all, Customer: own)
+-   `GET /api/payments/{id}` - View payment details
+-   `GET /api/payments/{id}/verify` - Verify payment status
+
+### Payment Gateways
+
+-   `GET /api/payment-gateways` - List available configured gateways
+
+### Products
+
+-   `GET /api/products` - List all products (Public)
+-   `POST /api/products` - Create product (Admin only)
+-   `GET /api/products/{id}` - View product (Public)
+-   `PUT /api/products/{id}` - Update product (Admin only)
+-   `DELETE /api/products/{id}` - Delete product (Admin only)
+
+### Settings
+
+-   `GET /api/settings` - List configuration
+-   `PUT /api/settings/{key}` - Update setting (Admin only)
+
+## 🔍 Advanced Features
+
+### Order Filtering (Pipelined)
+
+Orders can be filtered using query parameters. This uses a robust **Pipeline Pattern**.
+
+-   `?status=pending` (or confirmed, cancelled)
+-   `?min_total=100` (Orders above this amount)
+-   `?date_from=2024-01-01`
+-   `?date_to=2024-12-31`
+    Example: `/api/orders?status=pending&min_total=500`
+
+## 💳 Extensibility: Adding a New Gateway
+
+To add a new payment gateway (e.g., "Apple Pay") to the system, follow these steps:
+
+1.  **Create the Driver Class**:
+    Create a new class `ApplePayDriver.php` in `app/PaymentGateways/Drivers/` that implements `App\Contracts\PaymentGatewayInterface`. Implement the `process` method.
+
+2.  **Register the Driver**:
+    In `app/PaymentGateways/PaymentManager.php`, add a driver creation method:
+
+    ```php
+    public function createApplePayDriver()
+    {
+        return new ApplePayDriver($this->config['apple_pay'] ?? []);
+    }
+    ```
+
+3.  **Update the Enum**:
+    Add the new case to `app/Enums/PaymentMethod.php`:
+
+    ```php
+    case APPLE_PAY = 'apple_pay';
+    ```
+
+4.  **Configure Credentials (Runtime)**:
+    Add the credentials to the `payment_gateways` setting in the database (or via the Admin Settings API). This is stored as JSON:
+    ```json
+    [
+        {
+            "code": "apple_pay",
+            "credentials": { "merchant_id": "..." },
+            "is_default": false
+        }
+    ]
+    ```
+
+**Result**: The system will now dynamically load "Apple Pay", display it in the list of available gateways for customers, and process payments using your new driver, without writing any additional logic code.
+
+## 📖 User Stories
+
+### Customer
+
+-   **Browse & Order**: "As a customer, I want to view products and create orders so I can purchase items."
+-   **Track Orders**: "As a customer, I want to view my order history and see the status of each order."
+-   **Process Payment**: "As a customer, I want to pay for my confirmed orders using my preferred payment method (Credit Card, etc.) securely."
+-   **Partial Payments**: "As a customer, I want to be able to make partial payments if needed until the checks are balanced."
+
+### Admin
+
+-   **Order Fulfillment**: "As an admin, I want to view all incoming orders and confirm or cancel them based on inventory."
+-   **Product Management**: "As an admin, I want to add, update, and remove products from the catalog."
+-   **Dynamic Configuration**: "As an admin, I want to configure payment gateways (API keys, default status) directly from the settings without modifying the code."
+-   **Audit**: "As an admin, I want to view a complete log of all payments and transactions for financial auditing."
+
+## 🧪 Testing
+
+Run specific feature tests:
+
+```bash
+php artisan test tests/Feature/OrderFlowTest.php
+```
+
+Run all tests:
+
+```bash
+php artisan test
+```
+
+## 📝 Key Implementation Details
+
+-   **Payment Processing**: Synchronous simulation with configurable success rates
+-   **Testing Environment**: Payments always succeed in test environment for deterministic tests
+-   **Order Status Transitions**: Enforced via `OrderStatus` enum with validation
+-   **Overpayment Prevention**: Sums successful + pending payments before accepting new payment
+-   **Gateway Configuration**: Dynamic loading from database via `SettingServiceProvider`
+-   **Authorization**: Middleware-based role checks + controller-level ownership validation
+
+## 📚 Design Patterns Used
+
+-   **Repository Pattern**: Data access abstraction
+-   **Service Layer**: Business logic encapsulation
+-   **Manager/Driver Pattern**: Payment gateway extensibility
+-   **Pipeline Pattern**: Order filtering
+-   **Strategy Pattern**: Payment method selection
+-   **Service Provider**: Dynamic configuration loading
